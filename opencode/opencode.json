@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["opencode-browser-plugin"],
+  "provider": {
+    "ollama": {
+      "name": "Ollama Local",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://host.docker.internal:11434/v1"
+      },
+      "models": {
+        "llama3.2:3b": { "name": "llama3.2:3b", "reasoning": false, "tool_call": true },
+        "deepseek-r1:8b": { "name": "deepseek-r1:8b", "reasoning": true, "tool_call": true },
+        "qwen2.5-coder:7b": { "name": "qwen2.5-coder:7b", "reasoning": true, "tool_call": true }
+      }
+    },
+    "lallamaollama": {
+      "name": "LaLlamaOllama Proxy",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://host.docker.internal:3016/v1"
+      },
+      "models": {
+        "llama3.2:3b": { "name": "llama3.2:3b", "reasoning": false, "tool_call": true },
+        "deepseek-r1:8b": { "name": "deepseek-r1:8b", "reasoning": true, "tool_call": true },
+        "qwen2.5-coder:7b": { "name": "qwen2.5-coder:7b", "reasoning": true, "tool_call": true }
+      }
+    }
+  }
+}

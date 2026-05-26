@@ -1,0 +1,74 @@
+version: "3.8"
+name: "opencode-omni"
+
+services:
+  opencode-core:
+    build:
+      context: ./opencode
+      dockerfile: Dockerfile
+    container_name: omni-opencode-core
+    volumes:
+      - ./data/opencode:/home/opencode/.config/opencode
+      - ./workspace:/workspace
+    environment:
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_PASSWORD}
+    networks:
+      - omni-network
+    restart: unless-stopped
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: omni-backend
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - ./data/backend:/app/data
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENCODE_URL=http://opencode-core:4096
+      - OPENCODE_PASSWORD=${OPENCODE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - OPENCODE_PROVIDER_URL=${OPENCODE_PROVIDER_URL:-http://host.docker.internal:3016/v1}
+      - OPENCODE_PROVIDER_NAME=${OPENCODE_PROVIDER_NAME:-lallamaollama}
+      - OPENCODE_MODEL=${OPENCODE_MODEL:-llama3.2:3b}
+      - TZ=${TZ:-America/Argentina/Buenos_Aires}
+      - BACKEND_PORT=3000
+    depends_on:
+      - opencode-core
+    networks:
+      - omni-network
+    restart: unless-stopped
+
+  frontend-dashboard:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: omni-frontend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    environment:
+      - VITE_API_URL=http://localhost:${BACKEND_PORT:-3000}
+    depends_on:
+      - backend-api
+    networks:
+      - omni-network
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: omni-ngrok
+    depends_on:
+      - backend-api
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: http backend-api:3000
+    networks:
+      - omni-network
+    restart: unless-stopped
+
+networks:
+  omni-network:
+    driver: bridge
