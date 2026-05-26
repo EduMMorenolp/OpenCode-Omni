@@ -24,14 +24,6 @@ CREATE TABLE IF NOT EXISTS task_logs (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  username TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  role TEXT DEFAULT 'admin',
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
 CREATE INDEX IF NOT EXISTS idx_task_logs_task_id ON task_logs(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_logs_status ON task_logs(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_enabled ON tasks(enabled);
