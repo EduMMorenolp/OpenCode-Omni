@@ -94,6 +94,27 @@ export async function executeShell(sessionId, command) {
   return data;
 }
 
+export async function executeCommand(sessionId, command, args, agent) {
+  const body = { command };
+  if (args) body.arguments = args;
+  if (agent) body.agent = agent;
+  const { data } = await client.post(`/session/${sessionId}/command`, body);
+  return data;
+}
+
+export async function summarizeSession(sessionId, providerID, modelID) {
+  const body = {};
+  if (providerID) body.providerID = providerID;
+  if (modelID) body.modelID = modelID;
+  const { data } = await client.post(`/session/${sessionId}/summarize`, body);
+  return data;
+}
+
+export async function listCommands() {
+  const { data } = await client.get('/command');
+  return data;
+}
+
 export async function getConfig() {
   const { data } = await client.get('/config');
   return data;

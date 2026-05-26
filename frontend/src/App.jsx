@@ -10,6 +10,8 @@ import ActivityLog from './history/ActivityLog';
 import HooksList from './hooks/HooksList';
 import MemoryView from './memory/MemoryView';
 import DocAnalyzer from './vision/DocAnalyzer';
+import ChatView from './chat/ChatView';
+import SettingsPage from './settings/SettingsPage';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -27,7 +29,8 @@ export default function App() {
             <DashboardLayout />
           </ProtectedRoute>
         }>
-          <Route index element={<TaskList />} />
+          <Route index element={<ChatView />} />
+          <Route path="tasks" element={<TaskList />} />
           <Route path="tasks/new" element={<TaskForm />} />
           <Route path="tasks/:id/edit" element={<TaskForm />} />
           <Route path="tasks/:id/logs" element={<TaskLogs />} />
@@ -36,6 +39,7 @@ export default function App() {
           <Route path="hooks" element={<HooksList />} />
           <Route path="memory" element={<MemoryView />} />
           <Route path="vision" element={<DocAnalyzer />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

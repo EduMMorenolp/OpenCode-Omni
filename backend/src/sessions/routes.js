@@ -81,6 +81,36 @@ router.post('/session/:id/shell', async (req, res) => {
   }
 });
 
+router.post('/session/:id/command', async (req, res) => {
+  try {
+    const { command, arguments: args, agent } = req.body;
+    if (!command) return res.status(400).json({ error: 'command es requerido' });
+    const result = await opencode.executeCommand(req.params.id, command, args, agent);
+    res.json(result);
+  } catch (err) {
+    res.status(502).json({ error: 'Error ejecutando comando', detail: err.message });
+  }
+});
+
+router.post('/session/:id/summarize', async (req, res) => {
+  try {
+    const { providerID, modelID } = req.body;
+    const result = await opencode.summarizeSession(req.params.id, providerID, modelID);
+    res.json(result);
+  } catch (err) {
+    res.status(502).json({ error: 'Error compactando sesión', detail: err.message });
+  }
+});
+
+router.get('/commands', async (req, res) => {
+  try {
+    const commands = await opencode.listCommands();
+    res.json(commands);
+  } catch (err) {
+    res.status(502).json({ error: 'Error listando comandos', detail: err.message });
+  }
+});
+
 router.get('/config', async (req, res) => {
   try {
     const config = await opencode.getConfig();

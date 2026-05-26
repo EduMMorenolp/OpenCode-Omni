@@ -125,6 +125,21 @@ export const api = {
     events() { return request('/api/hooks/events'); },
   },
 
+  settings: {
+    telegramStatus() {
+      return request('/api/settings/telegram');
+    },
+    telegramUpdate(token) {
+      return request('/api/settings/telegram', {
+        method: 'PUT',
+        body: JSON.stringify({ token }),
+      });
+    },
+    telegramTest() {
+      return request('/api/settings/telegram/test', { method: 'POST' });
+    },
+  },
+
   opencode: {
     health() {
       return request('/api/opencode/health');
@@ -158,6 +173,23 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ command }),
       });
+    },
+    sendCommand(sessionId, command, args, agent) {
+      const body = { command };
+      if (args) body.arguments = args;
+      if (agent) body.agent = agent;
+      return request(`/api/opencode/session/${sessionId}/command`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    summarizeSession(sessionId) {
+      return request(`/api/opencode/session/${sessionId}/summarize`, {
+        method: 'POST',
+      });
+    },
+    listCommands() {
+      return request('/api/opencode/commands');
     },
     getConfig() {
       return request('/api/opencode/config');

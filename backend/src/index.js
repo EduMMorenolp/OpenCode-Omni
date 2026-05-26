@@ -21,6 +21,7 @@ import historyRouter from './history/routes.js';
 import hooksRouter from './hooks/routes.js';
 import memoryRouter from './memory/routes.js';
 import visionRouter from './vision/routes.js';
+import settingsRouter from './settings/routes.js';
 
 const app = express();
 const PORT = parseInt(process.env.BACKEND_PORT || '3021');
@@ -46,6 +47,7 @@ app.use('/api/history', express.json(), historyRouter);
 app.use('/api/hooks', express.json(), authenticate, hooksRouter);
 app.use('/api/memory', express.json(), authenticate, memoryRouter);
 app.use('/api/vision', express.json(), authenticate, visionRouter);
+app.use('/api/settings', express.json(), authenticate, settingsRouter);
 
 app.get('/api/health', async (req, res) => {
   let ocStatus = 'disconnected';
@@ -93,7 +95,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-getDb();
+const db = getDb();
+const tokenRow = db.prepare("SELECT value FROM settings WHERE key = 'telegram_bot_token'").get();
+if (tokenRow?.value) {
+  process.env.TELEGRAM_BOT_TOKEN = tokenRow.value;
+  fetch(`https://api.telegram.org/bot${tokenRow.value}/getMe`)
+    .then(r => r.json())
+    .then(d => { if (d.ok) process.env.TELEGRAM_BOT_USERNAME = d.result?.username; })
+    .catch(() => {});
+}
 loadAllTasks();
 
 let lastOcHealthy = null;

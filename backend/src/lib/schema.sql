@@ -65,3 +65,9 @@ CREATE INDEX IF NOT EXISTS idx_lessons_tags ON lessons_learned(tags);
 CREATE INDEX IF NOT EXISTS idx_task_logs_task_id ON task_logs(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_logs_status ON task_logs(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_enabled ON tasks(enabled);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now'))
+);
