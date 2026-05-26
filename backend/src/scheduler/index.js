@@ -1,8 +1,10 @@
 import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db/index.js';
-import * as opencode from '../opencode/client.js';
+import { getDb } from '../lib/database.js';
+import * as opencode from '../lib/opencode-client.js';
 import { sendMessage } from '../telegram/webhook.js';
+import logger from '../lib/logger.js';
+import { recordTaskRun, observeTaskExecution } from '../lib/metrics.js';
 
 const jobs = new Map();
 
@@ -12,7 +14,7 @@ export function scheduleTask(taskId, prompt, cronExpression, agent) {
   }
 
   if (!cron.validate(cronExpression)) {
-    console.error(`[Scheduler] Cron inválido para tarea ${taskId}: ${cronExpression}`);
+    logger.error({ taskId, cronExpression }, 'Cron inválido');
     return;
   }
 
@@ -24,17 +26,13 @@ export function scheduleTask(taskId, prompt, cronExpression, agent) {
 
   jobs.set(taskId, job);
 
-  const nextDates = cronExpression.split(' ').length === 5
-    ? cronExpression.split(' ')
-    : null;
-
   const db = getDb();
   db.prepare('UPDATE tasks SET next_run_at = ? WHERE id = ?').run(
     new Date(Date.now() + 60000).toISOString(),
     taskId
   );
 
-  console.log(`[Scheduler] Tarea ${taskId} programada: "${cronExpression}"`);
+  logger.info({ taskId, cronExpression }, 'Tarea programada');
 }
 
 export function unscheduleTask(taskId) {
@@ -42,7 +40,7 @@ export function unscheduleTask(taskId) {
   if (job) {
     job.stop();
     jobs.delete(taskId);
-    console.log(`[Scheduler] Tarea ${taskId} desprogramada`);
+    logger.info({ taskId }, 'Tarea desprogramada');
   }
 }
 
@@ -51,26 +49,27 @@ export function stopAll() {
     job.stop();
   }
   jobs.clear();
-  console.log('[Scheduler] Todas las tareas detenidas');
+  logger.info('Todas las tareas detenidas');
 }
 
 export function loadAllTasks() {
   const db = getDb();
   const tasks = db.prepare('SELECT * FROM tasks WHERE enabled = 1').all();
-  console.log(`[Scheduler] Cargando ${tasks.length} tareas activas...`);
+  logger.info({ count: tasks.length }, 'Cargando tareas activas');
   for (const task of tasks) {
     scheduleTask(task.id, task.prompt, task.cron_expression, task.agent);
   }
 }
 
 async function executeTask(taskId, prompt, agent) {
+  const startTime = Date.now();
   const logId = uuidv4();
   const db = getDb();
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
 
   if (!task || !task.enabled) return;
 
-  console.log(`[Scheduler] Ejecutando tarea ${taskId}: "${task.title}"`);
+  logger.info({ taskId, title: task.title }, 'Ejecutando tarea');
 
   db.prepare(`
     INSERT INTO task_logs (id, task_id, status, started_at)
@@ -91,6 +90,9 @@ async function executeTask(taskId, prompt, agent) {
       UPDATE tasks SET last_run_at = datetime('now'), next_run_at = datetime('now', '+1 day') WHERE id = ?
     `).run(taskId);
 
+    recordTaskRun('success');
+    observeTaskExecution(taskId, Date.now() - startTime);
+
     const chatId = task.created_by;
     if (chatId && !isNaN(parseInt(chatId))) {
       const summary = responseText.length > 500
@@ -104,9 +106,10 @@ async function executeTask(taskId, prompt, agent) {
       ].join('\n'));
     }
 
-    console.log(`[Scheduler] Tarea ${taskId} completada exitosamente`);
+    logger.info({ taskId, duration: Date.now() - startTime }, 'Tarea completada');
   } catch (err) {
-    console.error(`[Scheduler] Error en tarea ${taskId}:`, err.message);
+    const duration = Date.now() - startTime;
+    logger.error({ taskId, err, duration }, 'Error en tarea');
 
     db.prepare(`
       UPDATE task_logs SET status = 'failed', error = ?, completed_at = datetime('now')
@@ -114,6 +117,9 @@ async function executeTask(taskId, prompt, agent) {
     `).run(err.message.substring(0, 2000), logId);
 
     db.prepare('UPDATE tasks SET last_run_at = datetime(\'now\') WHERE id = ?').run(taskId);
+
+    recordTaskRun('failed');
+    observeTaskExecution(taskId, duration);
 
     const chatId = task.created_by;
     if (chatId && !isNaN(parseInt(chatId))) {

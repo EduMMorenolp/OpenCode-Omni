@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db/index.js';
+import { getDb } from '../lib/database.js';
 import { scheduleTask, unscheduleTask } from '../scheduler/index.js';
 
 const router = Router();

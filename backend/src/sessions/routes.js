@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import * as opencode from '../opencode/client.js';
+import * as opencode from '../lib/opencode-client.js';
 
 const router = Router();
 

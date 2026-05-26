@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db/index.js';
-import * as opencode from '../opencode/client.js';
+import { getDb } from '../lib/database.js';
+import * as opencode from '../lib/opencode-client.js';
 import { scheduleTask, unscheduleTask } from '../scheduler/index.js';
+import logger from '../lib/logger.js';
 
 const TELEGRAM_API = 'https://api.telegram.org/bot';
 
@@ -271,7 +272,7 @@ export async function handleUpdate(update) {
       await handleCallbackQuery(chatId, data);
     }
   } catch (err) {
-    console.error('[Telegram] Error processing update:', err);
+    logger.error({ err }, 'Error procesando update de Telegram');
   }
 }
 

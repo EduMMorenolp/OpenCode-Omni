@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from './logger.js';
 
 const OPENCODE_URL = process.env.OPENCODE_URL || 'http://localhost:4096';
 const OPENCODE_USER = process.env.OPENCODE_USER || 'opencode';
@@ -13,6 +14,19 @@ const client = axios.create({
   timeout: 120000,
   headers: { 'Content-Type': 'application/json' },
 });
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    logger.error({
+      err: error.message,
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+    }, 'Error en llamada a OpenCode');
+    return Promise.reject(error);
+  },
+);
 
 export async function health() {
   const { data } = await client.get('/global/health');

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import DashboardLayout from './pages/DashboardLayout';
-import TaskList from './pages/TaskList';
-import TaskForm from './pages/TaskForm';
-import TaskLogs from './pages/TaskLogs';
-import SessionsView from './pages/SessionsView';
+import LoginPage from './auth/LoginPage';
+import DashboardLayout from './dashboard/DashboardLayout';
+import TaskList from './tasks/TaskList';
+import TaskForm from './tasks/TaskForm';
+import TaskLogs from './tasks/TaskLogs';
+import SessionsView from './sessions/SessionsView';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
