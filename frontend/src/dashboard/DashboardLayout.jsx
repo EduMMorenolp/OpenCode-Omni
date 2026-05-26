@@ -1,25 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import { GlassButton, StatusIndicator } from '../components/GlassComponents';
+import { colors, spacing, transitions, glassmorphism } from '../styles/theme';
 
 const linkBase = {
   display: 'flex',
   alignItems: 'center',
-  gap: '0.6rem',
-  padding: '0.5rem 0.75rem',
-  color: '#94a3b8',
+  gap: spacing.md,
+  padding: `${spacing.md} ${spacing.lg}`,
+  color: colors.text.tertiary,
   textDecoration: 'none',
   borderRadius: '8px',
-  fontSize: '0.85rem',
+  fontSize: '0.9rem',
   fontWeight: 400,
-  transition: 'all 0.15s ease',
+  transition: `all ${transitions.base}`,
 };
 
 const linkActive = {
   ...linkBase,
-  background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.08))',
-  color: '#f1f5f9',
+  background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.1))',
+  color: colors.text.primary,
   fontWeight: 500,
+  borderLeft: `3px solid ${colors.primary.from}`,
+  paddingLeft: `calc(${spacing.lg} - 3px)`,
 };
 
 export default function DashboardLayout() {
@@ -63,122 +67,225 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#0f172a', color: '#f1f5f9' }}>
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      background: colors.background.base,
+      color: colors.text.primary,
+      overflow: 'hidden',
+    }}>
+      {/* Sidebar Navigation */}
       <nav style={{
-        width: '240px',
-        background: '#0f172a',
-        borderRight: '1px solid #1e293b',
-        padding: '1rem 0.75rem',
+        width: '260px',
+        background: glassmorphism.glassElevated.background,
+        backdropFilter: glassmorphism.glassElevated.backdropFilter,
+        borderRight: `1px solid ${colors.border.light}`,
+        padding: `${spacing.lg} 0`,
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
+        overflowY: 'auto',
       }}>
+        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.6rem',
-          padding: '0.25rem 0.5rem 1rem',
-          marginBottom: '0.5rem',
-          borderBottom: '1px solid #1e293b',
+          gap: spacing.md,
+          padding: `${spacing.md} ${spacing.lg}`,
+          marginBottom: spacing.lg,
+          borderBottom: `1px solid ${colors.border.light}`,
         }}>
           <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            background: `linear-gradient(135deg, ${colors.primary.from}, ${colors.secondary.from})`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1rem',
+            fontSize: '1.2rem',
             flexShrink: 0,
+            boxShadow: `0 0 12px rgba(59, 130, 246, 0.4)`,
           }}>
             ⚡
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f1f5f9' }}>OpenCode-Omni</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{user.username || 'admin'}</div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              color: colors.text.primary,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              OpenCode-Omni
+            </div>
+            <div style={{
+              fontSize: '0.75rem',
+              color: colors.text.tertiary,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {user.username || 'admin'}
+            </div>
           </div>
         </div>
 
-        <div style={{ padding: '0.25rem 0.5rem', marginBottom: '0.75rem' }}>
+        {/* Status Badges */}
+        <div style={{
+          padding: `0 ${spacing.lg} ${spacing.lg}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.sm,
+        }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.35rem 0.6rem',
-            borderRadius: '6px',
-            fontSize: '0.75rem',
-            background: ocStatus === null ? 'transparent' : ocStatus ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${ocStatus === null ? '#1e293b' : ocStatus ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-            color: ocStatus === null ? '#64748b' : ocStatus ? '#4ade80' : '#f87171',
-            marginBottom: '0.4rem',
+            gap: spacing.sm,
+            padding: `${spacing.md} ${spacing.lg}`,
+            borderRadius: '8px',
+            fontSize: '0.8rem',
+            background: ocStatus === null ? 'transparent' : ocStatus ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+            border: `1px solid ${ocStatus === null ? colors.border.light : ocStatus ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+            color: ocStatus === null ? colors.text.tertiary : ocStatus ? '#6ee7b7' : '#fca5a5',
+            fontWeight: 500,
           }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: ocStatus === null ? '#64748b' : ocStatus ? '#22c55e' : '#ef4444',
-              flexShrink: 0,
-              boxShadow: ocStatus ? '0 0 6px rgba(34,197,94,0.5)' : 'none',
-            }} />
-            OpenCode {ocStatus === null ? '...' : ocStatus ? 'Conectado' : 'Offline'}
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: ocStatus === null ? colors.text.tertiary : ocStatus ? colors.status.online : colors.status.error,
+                flexShrink: 0,
+                boxShadow: ocStatus ? `0 0 8px ${colors.status.online}` : 'none',
+              }}
+            />
+            OpenCode {ocStatus === null ? 'Verificando...' : ocStatus ? 'Conectado' : 'Offline'}
           </div>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.35rem 0.6rem',
-            borderRadius: '6px',
-            fontSize: '0.75rem',
-            background: telegramStatus === 'connected' ? 'rgba(34,197,94,0.08)' : 'transparent',
-            border: `1px solid ${telegramStatus === 'connected' ? 'rgba(34,197,94,0.2)' : '#1e293b'}`,
-            color: telegramStatus === 'connected' ? '#4ade80' : telegramStatus === 'disconnected' ? '#94a3b8' : '#64748b',
+            gap: spacing.sm,
+            padding: `${spacing.md} ${spacing.lg}`,
+            borderRadius: '8px',
+            fontSize: '0.8rem',
+            background: telegramStatus === 'connected' ? 'rgba(16,185,129,0.08)' : 'transparent',
+            border: `1px solid ${telegramStatus === 'connected' ? 'rgba(16,185,129,0.2)' : colors.border.light}`,
+            color: telegramStatus === 'connected' ? '#6ee7b7' : colors.text.tertiary,
+            fontWeight: 500,
           }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: telegramStatus === 'connected' ? '#22c55e' : telegramStatus === 'disconnected' ? '#64748b' : '#ef4444',
-              flexShrink: 0,
-            }} />
-            Telegram {telegramStatus === 'connected' ? 'Conectado' : telegramStatus === 'disconnected' ? 'Desconectado' : telegramStatus === 'error' ? 'Error' : '...'}
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: telegramStatus === 'connected' ? colors.status.online : colors.text.tertiary,
+                flexShrink: 0,
+              }}
+            />
+            Telegram {telegramStatus === 'connected' ? 'Conectado' : telegramStatus === 'disconnected' ? 'Desconectado' : 'Error'}
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {navItems.map(item => (
+        {/* Navigation Items */}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: `0 ${spacing.sm}`,
+        }}>
+          <div style={{ padding: `${spacing.md} ${spacing.sm}`, fontSize: '0.7rem', fontWeight: 700, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Principal
+          </div>
+          {navItems.slice(0, 1).map(item => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               style={({ isActive }) => isActive ? linkActive : linkBase}
             >
-              <span style={{ width: '1.4rem', textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ fontSize: '1rem' }}>{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
+
+          <div style={{ padding: `${spacing.md} ${spacing.sm} 0`, fontSize: '0.7rem', fontWeight: 700, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Gestión
+          </div>
+          {navItems.slice(1, 4).map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              style={({ isActive }) => isActive ? linkActive : linkBase}
+            >
+              <span style={{ fontSize: '1rem' }}>{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
+
+          <div style={{ padding: `${spacing.md} ${spacing.sm} 0`, fontSize: '0.7rem', fontWeight: 700, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Información
+          </div>
+          {navItems.slice(4).map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              style={({ isActive }) => isActive ? linkActive : linkBase}
+            >
+              <span style={{ fontSize: '1rem' }}>{item.icon}</span>
               {item.label}
             </NavLink>
           ))}
         </div>
 
-        <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #1e293b', marginTop: '0.5rem' }}>
-          <NavLink to="/settings" style={({ isActive }) => isActive ? linkActive : {
-            ...linkBase,
-            fontSize: '0.8rem',
-          }}>
-            <span style={{ width: '1.4rem', textAlign: 'center', flexShrink: 0 }}>⚙️</span>
+        {/* Footer Actions */}
+        <div style={{
+          padding: `0 ${spacing.sm}`,
+          borderTop: `1px solid ${colors.border.light}`,
+          marginTop: spacing.lg,
+          paddingTop: spacing.lg,
+        }}>
+          <NavLink
+            to="/settings"
+            style={({ isActive }) => isActive ? linkActive : linkBase}
+          >
+            <span style={{ fontSize: '1rem' }}>⚙️</span>
             Ajustes
           </NavLink>
-          <button onClick={handleLogout} style={{
-            ...linkBase,
-            width: '100%',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '0.8rem',
-            color: '#64748b',
-          }}>
-            <span style={{ width: '1.4rem', textAlign: 'center', flexShrink: 0 }}>🚪</span>
+          <button
+            onClick={handleLogout}
+            style={{
+              ...linkBase,
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: colors.text.tertiary,
+              justifyContent: 'flex-start',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = colors.status.error;
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = colors.text.tertiary;
+              e.currentTarget.style.background = 'none';
+            }}
+          >
+            <span style={{ fontSize: '1rem' }}>🚪</span>
             Cerrar sesión
           </button>
         </div>
       </nav>
 
-      <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* Main Content */}
+      <main style={{
+        flex: 1,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        background: colors.background.base,
+      }}>
         <Outlet />
       </main>
     </div>

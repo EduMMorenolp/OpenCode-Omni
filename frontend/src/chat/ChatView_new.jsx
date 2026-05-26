@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../api/client';
-import { GlassCard, GlassButton, LoadingSpinner } from '../components/GlassComponents';
+import { GlassCard, GlassButton, Alert, LoadingSpinner } from '../components/GlassComponents';
 import { colors, spacing, transitions, glassmorphism } from '../styles/theme';
 
 const BUILTIN_COMMANDS = [
@@ -200,27 +200,16 @@ export default function ChatView() {
         await handleSlashCommand(text.slice(1).trim());
       } else if (text.startsWith('!')) {
         setStreamingText('');
-        const shellCmd = text.slice(1).trim();
-        if (!shellCmd) throw new Error('Comando vacío');
-        const result = await api.opencode.sendShell(activeId, shellCmd);
-        setMessages(prev => [...prev, {
-          info: { role: 'assistant' },
-          parts: result?.parts || [{ type: 'text', text: result?.text || '✅ Ejecutado' }],
-        }]);
+        // Handle system commands
       } else {
         const result = await api.opencode.sendMessage(activeId, text);
         setStreamingText('');
-        setMessages(prev => [...prev, {
-          info: { role: 'assistant' },
-          parts: result?.parts || [{ type: 'text', text: result?.text || 'Sin respuesta' }],
-        }]);
+        if (result?.parts) {
+          setMessages(prev => [...prev, { info: { role: 'assistant' }, ...result }]);
+        }
       }
     } catch (err) {
-      setStreamingText('');
-      setMessages(prev => [...prev, {
-        info: { role: 'assistant' },
-        parts: [{ type: 'text', text: `❌ Error: ${err.message}` }],
-      }]);
+      setStreamingText('❌ Error: ' + err.message);
     } finally {
       setSending(false);
     }
@@ -477,7 +466,7 @@ export default function ChatView() {
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Escribe / para comandos, ! para sistema, o tu mensaje..."
+                  placeholder="Escribe / para comandos, ! para sistema, o simplemente tu mensaje..."
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
