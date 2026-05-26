@@ -80,6 +80,18 @@ export default function DashboardLayout() {
         <NavLink to="/sessions" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
           💬 Sesiones
         </NavLink>
+        <NavLink to="/hooks" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
+          ⚡ Hooks
+        </NavLink>
+        <NavLink to="/memory" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
+          🧠 Memoria
+        </NavLink>
+        <NavLink to="/vision" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
+          📄 Documentos
+        </NavLink>
+        <NavLink to="/history" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
+          📜 Historial
+        </NavLink>
 
         <div style={{ marginTop: 'auto' }}>
           <button onClick={handleLogout} style={{

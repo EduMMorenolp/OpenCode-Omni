@@ -47,6 +47,18 @@ export async function sendMessage(sessionId, text, agent) {
   return data;
 }
 
+export async function sendImageMessage(sessionId, text, imageBase64, mimeType, agent) {
+  const body = {
+    parts: [
+      { type: 'image', data: imageBase64, mime_type: mimeType },
+      { type: 'text', text },
+    ],
+  };
+  if (agent) body.agent = agent;
+  const { data } = await client.post(`/session/${sessionId}/message`, body);
+  return data;
+}
+
 export async function sendMessageAsync(sessionId, text, agent) {
   const body = {
     parts: [{ type: 'text', text }],

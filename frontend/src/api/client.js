@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3021';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -16,6 +16,10 @@ async function request(path, options = {}) {
     ...options,
     headers,
   });
+
+  if (options.headers && !options.headers['Content-Type']) {
+    delete headers['Content-Type'];
+  }
 
   if (res.status === 401) {
     localStorage.removeItem('token');
@@ -68,6 +72,57 @@ export const api = {
     logs(id) {
       return request(`/api/tasks/${id}/logs`);
     },
+  },
+
+  history: {
+    actions(limit = 50, type = null) {
+      let url = `/api/history/actions?limit=${limit}`;
+      if (type) url += `&type=${type}`;
+      return request(url);
+    },
+    stats() { return request('/api/history/stats'); },
+    types() { return request('/api/history/types'); },
+  },
+
+  vision: {
+    analyze(file, prompt = '') {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (prompt) formData.append('prompt', prompt);
+      return request('/api/vision/analyze', {
+        method: 'POST',
+        body: formData,
+        headers: {},
+      });
+    },
+  },
+
+  memory: {
+    lessons(search = '') {
+      let url = '/api/memory/lessons?limit=100';
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      return request(url);
+    },
+    stats() { return request('/api/memory/stats'); },
+    create(data) {
+      return request('/api/memory/lessons', { method: 'POST', body: JSON.stringify(data) });
+    },
+    generate(data) {
+      return request('/api/memory/generate', { method: 'POST', body: JSON.stringify(data) });
+    },
+    delete(id) { return request(`/api/memory/lessons/${id}`, { method: 'DELETE' }); },
+  },
+
+  hooks: {
+    list() { return request('/api/hooks'); },
+    create(data) {
+      return request('/api/hooks', { method: 'POST', body: JSON.stringify(data) });
+    },
+    update(id, data) {
+      return request(`/api/hooks/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    },
+    delete(id) { return request(`/api/hooks/${id}`, { method: 'DELETE' }); },
+    events() { return request('/api/hooks/events'); },
   },
 
   opencode: {

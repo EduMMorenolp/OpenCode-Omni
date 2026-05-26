@@ -1,8 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../lib/database.js';
 import * as opencode from '../lib/opencode-client.js';
+import { sendImageMessage } from '../lib/opencode-client.js';
 import { scheduleTask, unscheduleTask } from '../scheduler/index.js';
 import logger from '../lib/logger.js';
+import { recordAction } from '../lib/history.js';
+import { emitEvent } from '../lib/events.js';
+import { getLessons, saveLesson } from '../lib/memory.js';
+import { downloadTelegramPhoto } from '../lib/file-utils.js';
 
 const TELEGRAM_API = 'https://api.telegram.org/bot';
 
@@ -65,6 +70,8 @@ async function handleStart(chatId) {
     '`/status` — Estado del sistema',
     '`/shell <cmd>` — Ejecutar comando shell',
     '`/session <prompt>` — Chat directo con OpenCode',
+    '',
+    '`/learn <búsqueda>` — Consultar lecciones aprendidas',
     '',
     '*Ejemplo:*',
     '`/task Scrapear precios de Amazon | 0 9 * * *`',
@@ -238,6 +245,45 @@ async function handleSession(chatId, args) {
   }
 }
 
+async function handleLearn(chatId, args) {
+  const query = args.join(' ');
+  const lessons = getLessons(10, 0, query || null);
+
+  if (lessons.length === 0) {
+    return sendMessage(chatId, query
+      ? `No encontré lecciones que coincidan con: "${query}"`
+      : 'No hay lecciones aprendidas guardadas.\n\nLas lecciones se generan automáticamente al completar tareas programadas.');
+  }
+
+  const lines = lessons.map((l, i) =>
+    `${i + 1}. *${l.title}*\n   ${l.content.substring(0, 300)}\n   🏷️ ${l.tags || '—'}`
+  );
+  const msg = `*🧠 Lecciones Aprendidas (${lessons.length})*\n\n${lines.join('\n\n')}`;
+  await sendMessage(chatId, msg);
+}
+
+async function handlePhoto(chatId, photo, caption) {
+  try {
+    const fileId = photo[photo.length - 1].file_id;
+    await sendMessage(chatId, '📷 Recibí tu imagen. Analizando...');
+
+    const { buffer, mimeType } = await downloadTelegramPhoto(fileId);
+    const base64 = buffer.toString('base64');
+
+    const session = await opencode.createSession('Telegram photo');
+    const prompt = caption || 'Describe esta imagen en detalle.';
+    const result = await sendImageMessage(session.id, prompt, base64, mimeType);
+
+    const text = result?.parts?.[0]?.text || 'No pude analizar la imagen.';
+    const truncated = text.length > 4000 ? text.substring(0, 3997) + '...' : text;
+
+    await sendMessage(chatId, `*📷 Análisis de imagen:*\n${truncated}`);
+  } catch (err) {
+    logger.error({ err }, 'Error procesando foto');
+    await sendMessage(chatId, `❌ Error analizando imagen: ${err.message}`);
+  }
+}
+
 async function handleCallbackQuery(chatId, data) {
   if (data === 'list_tasks') return handleListTasks(chatId);
   if (data.startsWith('cancel_')) {
@@ -253,7 +299,16 @@ export async function handleUpdate(update) {
       const parsed = parseCommand(update.message.text);
       if (!parsed) return;
 
-      switch (parsed.command) {
+      const commandName = parsed.command;
+      const commandArg = parsed.args.join(' ').substring(0, 100);
+      emitEvent('telegram.command', { command: commandName, chatId, args: commandArg });
+      recordAction('telegram_command', `/${commandName} desde chat ${chatId}`, {
+        command: commandName,
+        chatId,
+        args: commandArg,
+      });
+
+      switch (commandName) {
         case '/start': return handleStart(chatId);
         case '/task': return handleTask(chatId, parsed.args);
         case '/tasks': return handleListTasks(chatId);
@@ -262,8 +317,17 @@ export async function handleUpdate(update) {
         case '/status': return handleStatus(chatId);
         case '/shell': return handleShell(chatId, parsed.args);
         case '/session': return handleSession(chatId, parsed.args);
+        case '/learn': return handleLearn(chatId, parsed.args);
         default: return sendMessage(chatId, `Comando no reconocido: ${parsed.command}. Usa /start`);
       }
+    }
+
+    if (update.message?.photo) {
+      const chatId = update.message.chat.id;
+      const caption = update.message.caption || '';
+      recordAction('telegram_command', `/photo desde chat ${chatId}`, { chatId });
+      await handlePhoto(chatId, update.message.photo, caption);
+      return;
     }
 
     if (update.callback_query) {

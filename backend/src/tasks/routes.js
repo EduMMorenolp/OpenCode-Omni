@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../lib/database.js';
 import { scheduleTask, unscheduleTask } from '../scheduler/index.js';
+import { recordAction } from '../lib/history.js';
 
 const router = Router();
 
@@ -45,6 +46,7 @@ router.post('/', (req, res) => {
   `).run(id, title, prompt, cron, agent || 'default', req.user?.username || 'admin');
 
   scheduleTask(id, prompt, cron, agent || 'default');
+  recordAction('task_created', `Tarea creada: ${title}`, { taskId: id, title, cron, agent });
 
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   res.status(201).json(task);
@@ -73,6 +75,14 @@ router.put('/:id', (req, res) => {
     req.params.id
   );
 
+  const wasEnabled = task.enabled === 1;
+  const newEnabled = enabled !== undefined ? enabled : wasEnabled;
+  if (enabled !== undefined && wasEnabled !== newEnabled) {
+    recordAction('task_toggled', `Tarea ${newEnabled ? 'habilitada' : 'deshabilitada'}: ${task.title}`, {
+      taskId: req.params.id, title: task.title, enabled: newEnabled,
+    });
+  }
+
   unscheduleTask(req.params.id);
   if (enabled !== undefined ? enabled : task.enabled) {
     scheduleTask(req.params.id, prompt || task.prompt, cron || task.cron_expression, agent || task.agent);
@@ -87,6 +97,7 @@ router.delete('/:id', (req, res) => {
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
   if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
 
+  recordAction('task_deleted', `Tarea eliminada: ${task.title}`, { taskId: req.params.id, title: task.title });
   unscheduleTask(req.params.id);
   db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
   res.json({ message: 'Tarea eliminada' });

@@ -6,6 +6,10 @@ import TaskList from './tasks/TaskList';
 import TaskForm from './tasks/TaskForm';
 import TaskLogs from './tasks/TaskLogs';
 import SessionsView from './sessions/SessionsView';
+import ActivityLog from './history/ActivityLog';
+import HooksList from './hooks/HooksList';
+import MemoryView from './memory/MemoryView';
+import DocAnalyzer from './vision/DocAnalyzer';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -28,6 +32,10 @@ export default function App() {
           <Route path="tasks/:id/edit" element={<TaskForm />} />
           <Route path="tasks/:id/logs" element={<TaskLogs />} />
           <Route path="sessions" element={<SessionsView />} />
+          <Route path="history" element={<ActivityLog />} />
+          <Route path="hooks" element={<HooksList />} />
+          <Route path="memory" element={<MemoryView />} />
+          <Route path="vision" element={<DocAnalyzer />} />
         </Route>
       </Routes>
     </BrowserRouter>

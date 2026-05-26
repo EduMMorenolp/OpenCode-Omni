@@ -5,6 +5,9 @@ import * as opencode from '../lib/opencode-client.js';
 import { sendMessage } from '../telegram/webhook.js';
 import logger from '../lib/logger.js';
 import { recordTaskRun, observeTaskExecution } from '../lib/metrics.js';
+import { recordAction } from '../lib/history.js';
+import { emitEvent } from '../lib/events.js';
+import { generateLesson } from '../lib/memory.js';
 
 const jobs = new Map();
 
@@ -106,6 +109,9 @@ async function executeTask(taskId, prompt, agent) {
       ].join('\n'));
     }
 
+    recordAction('task_completed', `Tarea completada: ${task.title}`, { taskId, title: task.title, duration: Date.now() - startTime });
+    emitEvent('task.completed', { taskId, title: task.title, duration: Date.now() - startTime, status: 'success' });
+    generateLesson(task.title, prompt, responseText, 'task', taskId);
     logger.info({ taskId, duration: Date.now() - startTime }, 'Tarea completada');
   } catch (err) {
     const duration = Date.now() - startTime;
@@ -120,6 +126,8 @@ async function executeTask(taskId, prompt, agent) {
 
     recordTaskRun('failed');
     observeTaskExecution(taskId, duration);
+    recordAction('task_failed', `Tarea fallida: ${task.title}`, { taskId, title: task.title, error: err.message.substring(0, 200) });
+    emitEvent('task.failed', { taskId, title: task.title, error: err.message.substring(0, 500), status: 'failed' });
 
     const chatId = task.created_by;
     if (chatId && !isNaN(parseInt(chatId))) {

@@ -15,10 +15,15 @@ import {
   observeHttpRequest,
   setOpencodeHealth,
 } from './lib/metrics.js';
+import { emitEvent } from './lib/events.js';
 import * as opencode from './lib/opencode-client.js';
+import historyRouter from './history/routes.js';
+import hooksRouter from './hooks/routes.js';
+import memoryRouter from './memory/routes.js';
+import visionRouter from './vision/routes.js';
 
 const app = express();
-const PORT = parseInt(process.env.BACKEND_PORT || '3000');
+const PORT = parseInt(process.env.BACKEND_PORT || '3021');
 
 app.use(cors());
 app.use(morgan('short'));
@@ -37,6 +42,10 @@ app.post('/api/auth/login', express.json(), loginRoute);
 
 app.use('/api/tasks', express.json(), authenticate, tasksRouter);
 app.use('/api/opencode', express.json(), authenticate, sessionsRouter);
+app.use('/api/history', express.json(), historyRouter);
+app.use('/api/hooks', express.json(), authenticate, hooksRouter);
+app.use('/api/memory', express.json(), authenticate, memoryRouter);
+app.use('/api/vision', express.json(), authenticate, visionRouter);
 
 app.get('/api/health', async (req, res) => {
   let ocStatus = 'disconnected';
@@ -98,6 +107,7 @@ async function checkOpencode() {
       lastOcHealthy = healthy;
     } else if (healthy !== lastOcHealthy) {
       lastOcHealthy = healthy;
+      emitEvent('health.changed', { healthy, status: healthy ? 'recovered' : 'down' });
       const adminChatId = process.env.ADMIN_CHAT_ID;
       if (adminChatId) {
         const msg = healthy
@@ -111,6 +121,7 @@ async function checkOpencode() {
     if (lastOcHealthy === null) lastOcHealthy = false;
     else if (lastOcHealthy !== false) {
       lastOcHealthy = false;
+      emitEvent('health.changed', { healthy: false, status: 'down' });
       const adminChatId = process.env.ADMIN_CHAT_ID;
       if (adminChatId) {
         await sendMessage(parseInt(adminChatId), '*🚨 OpenCode Core caído* — El servicio no responde. Revisa el contenedor.').catch(() => {});
